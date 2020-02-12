@@ -3,21 +3,22 @@ import observe from './observe'
 import {render, fireEvent} from '@testing-library/react'
 import '@testing-library/jest-dom/extend-expect'
 import {addHash} from './addHash'
+import {Observable} from './object-observer'
 
 test('add hash internally', () => {
   class TestClass {
     current = 2
 
-    previous() {
+    previous = function() {
       this.current--
     }
 
-    getCurrent() {
+    getCurrent = function() {
       return this.current
     }
   }
 
-  const model = new TestClass()
+  const model = Observable.from(new TestClass())
 
   function ComponentUsingModel({model}: {model: TestClass}) {
     const methods = observe(model)
@@ -68,10 +69,10 @@ test('add hash internally', () => {
 })
 
 test('that it can work with objects', () => {
-  const obj = {
+  const obj = Observable.from({
     foo: 'here',
     mutateMe: () => (obj.foo = 'there')
-  }
+  })
 
   function ComponentUsingModel({model}) {
     observe(model)
@@ -91,15 +92,15 @@ test('that it can work with objects', () => {
 })
 
 test('that it can work with multiple objects', () => {
-  const obj1 = {
+  const obj1 = Observable.from({
     foo: 'here',
     mutateMe: () => (obj1.foo = 'there')
-  }
+  })
 
-  const obj2 = {
+  const obj2 = Observable.from({
     bar: 'pete',
     mutateMe: () => (obj2.bar = 'paul')
-  }
+  })
 
   function ComponentUsingModel({model1, model2}) {
     observe(model1)
@@ -127,15 +128,15 @@ test('that it can work with multiple objects', () => {
 })
 
 test('that it can work with multiple objects', () => {
-  const obj1 = {
+  const obj1 = Observable.from({
     foo: 'here',
     mutateMe: () => (obj1.foo = 'there')
-  }
+  })
 
-  const obj2 = {
+  const obj2 = Observable.from({
     bar: 'pete',
     mutateMe: () => (obj2.bar = 'paul')
-  }
+  })
 
   function ComponentUsingModel1({model}) {
     observe(model)
@@ -174,11 +175,11 @@ test('add hash explicitly', () => {
   class TestClass {
     current = 2
 
-    previous() {
+    previous = function() {
       this.current--
     }
 
-    getCurrent() {
+    getCurrent = function() {
       return this.current
     }
   }
@@ -210,7 +211,7 @@ test('add hash explicitly', () => {
   }
 
   function ComponentWithNestedUseOfTheModelObject() {
-    const model = new TestClass()
+    const model = Observable.from(new TestClass())
     return (
       <>
         <ComponentUsingModel model={model} />
@@ -244,16 +245,16 @@ test('have a global model', async () => {
       this.__current = value
     }
 
-    previous() {
+    previous = function() {
       this.current--
     }
 
-    getCurrent() {
+    getCurrent = function() {
       return this.current
     }
   }
 
-  const model = new TestClass()
+  const model = Observable.from(new TestClass())
 
   const useNumberChanger = () => {
     return observe(model)
@@ -330,18 +331,18 @@ test('some ddd idea', () => {
   }
 
   class TestClass {
-    member: MemberClass = new MemberClass()
+    member: MemberClass = Observable.from(new MemberClass())
 
-    previous() {
+    previous = function() {
       this.member.current--
     }
 
-    getCurrent() {
+    getCurrent = function() {
       return this.member.current
     }
   }
 
-  const model = new TestClass()
+  const model = Observable.from(new TestClass())
 
   const useNumberChanger = () => {
     return observe(model)
@@ -407,10 +408,10 @@ test('some ddd idea', () => {
 })
 
 test('Changing a state of one model should not re-render a react component using a different model', () => {
-  const firstModel = {
+  const firstModel = Observable.from({
     foo: 'here',
     mutateMe: () => (firstModel.foo = 'there')
-  }
+  })
 
   let firstComponentRerunTimes = 0
 
@@ -425,7 +426,7 @@ test('Changing a state of one model should not re-render a react component using
     )
   }
 
-  const otherModel = {
+  const otherModel = Observable.from({
     someValue: 'someString',
     changeMe: function() {
       this.someValue = 'otherString'
@@ -433,7 +434,7 @@ test('Changing a state of one model should not re-render a react component using
     getRerunTimes: function() {
       return this.someValue
     }
-  }
+  })
 
   let differentComponentRerunTimes = 0
 

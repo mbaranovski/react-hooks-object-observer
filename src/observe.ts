@@ -1,7 +1,8 @@
 import {useCallback, useEffect, useState} from 'react'
 import hash from './hash'
+import {Observable} from './object-observer'
 
-type Model = {
+type Model = Observable & {
   constructor
   __observableId?: string
   hash?: () => string
@@ -9,7 +10,12 @@ type Model = {
 
 function id() {
   return 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, () =>
-    ((Math.floor(new Date().getTime() / 16) + Math.random() * 16) % 16 | 0 & 0x3 | 0x8).toString(16))
+    (
+      (Math.floor(new Date().getTime() / 16) + Math.random() * 16) % 16 |
+      (0 & 0x3) |
+      0x8
+    ).toString(16)
+  )
 }
 
 function getFields(toCheck) {
@@ -18,7 +24,9 @@ function getFields(toCheck) {
   do {
     props = props.concat(Object.getOwnPropertyNames(obj))
   } while ((obj = Object.getPrototypeOf(obj)))
-  return props.sort().filter((e, i, arr) => (e != arr[i + 1] && typeof toCheck[e] !== 'function'))
+  return props
+    .sort()
+    .filter((e, i, arr) => e != arr[i + 1] && typeof toCheck[e] !== 'function')
 }
 
 function attachProxy(object, fieldName, originalField, id) {
@@ -26,7 +34,7 @@ function attachProxy(object, fieldName, originalField, id) {
     configurable: true,
     enumerable: true,
     get: () => originalField,
-    set: (value) => {
+    set: value => {
       originalField = value
       eventEmitter.emit(id)
     }
@@ -39,19 +47,30 @@ function isWritableField(object, fieldName) {
 }
 
 function isObjectField(object, fieldName) {
-  return isWritableField(object, fieldName) && typeof object[fieldName] === 'object'
+  return (
+    isWritableField(object, fieldName) && typeof object[fieldName] === 'object'
+  )
 }
 
 function isPrimitiveField(object, fieldName) {
-  return isWritableField(object, fieldName) && typeof object[fieldName] !== 'object'
+  return (
+    isWritableField(object, fieldName) && typeof object[fieldName] !== 'object'
+  )
 }
 
 function recursivelyAttachProxy(originalField, fieldName, object, id) {
   if (isObjectField(object, fieldName))
     getFields(object[fieldName]).forEach(nestedFieldName =>
-      recursivelyAttachProxy(object[fieldName][nestedFieldName], nestedFieldName, object[fieldName], id))
+      recursivelyAttachProxy(
+        object[fieldName][nestedFieldName],
+        nestedFieldName,
+        object[fieldName],
+        id
+      )
+    )
 
-  if (isPrimitiveField(object, fieldName)) attachProxy(object, fieldName, originalField, id)
+  if (isPrimitiveField(object, fieldName))
+    attachProxy(object, fieldName, originalField, id)
 }
 
 function attachProxyToProperties<T extends Model>(model: T) {
@@ -80,7 +99,11 @@ class EventEmitter {
 const eventEmitter = new EventEmitter()
 
 function decorate<T extends Model>(model: T) {
-  if (!model.__observableId) Object.defineProperty(model, '__observableId', {value: id(), writable: false})
+  if (!model.__observableId)
+    Object.defineProperty(model, '__observableId', {
+      value: id(),
+      writable: false
+    })
   if (!model.hash) model.hash = () => hash(model)
 }
 
@@ -92,14 +115,17 @@ function reactify<T extends Model>(model: T) {
   }, [model.__observableId])
 
   useEffect(() => {
-    eventEmitter.on(model.__observableId, stateChangeCallback)
-    return () => eventEmitter.remove(model.__observableId)
+    model.observe(stateChangeCallback)
+
+    //eventEmitter.on(model.__observableId, stateChangeCallback)
+    // return () => eventEmitter.remove(model.__observableId)
+    return () => model.unobserve(stateChangeCallback)
   }, [model.__observableId])
 }
 
 function observe<T extends Model>(model: T): T {
   decorate(model)
-  attachProxyToProperties(model)
+  //attachProxyToProperties(model)
   reactify(model)
   return model
 }
