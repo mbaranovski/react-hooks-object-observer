@@ -5,7 +5,8 @@
     "sourceMap": true,
     "outDir": "lib/",
     "experimentalDecorators": true,
-    "jsx": "react"
+    "jsx": "react",
+    "lib": ["ESNext"]
   },
   "exclude": [
     "node_modules",

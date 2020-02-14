@@ -10,5 +10,6 @@
   "rules": {
     "prettier/prettier": "error",
     "@typescript-eslint/member-delimiter-style": 0
-  }
+  },
+  "ignorePatterns": ["./src/**/*.spec.ts*", "node_modules/"]
 }

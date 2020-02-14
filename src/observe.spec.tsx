@@ -1,4 +1,4 @@
-import * as React from 'react'
+import React from 'react'
 import observe from './observe'
 import {render, fireEvent} from '@testing-library/react'
 import '@testing-library/jest-dom/extend-expect'
@@ -462,4 +462,71 @@ test('Changing a state of one model should not re-render a react component using
   otherModel.changeMe()
   expect(differentComponentRerunTimes).toEqual(2)
   expect(firstComponentRerunTimes).toEqual(2)
+})
+
+test.only('that it can work with arrays', async () => {
+  const modelInit = {
+    numbersList: [],
+    addNumber(number) {
+      this.numbersList.push(number)
+    },
+
+    removeLastNumber() {
+      this.numbersList.pop()
+    },
+
+    removeFirstNumber() {
+      this.numbersList.shift()
+    },
+
+    getNumbers() {
+      return this.numbersList
+    }
+  }
+
+  function ComponentUsingModel({model}) {
+    observe(model)
+    return (
+      <div>
+        <div
+          data-testid={'push'}
+          onClick={() => model.addNumber(model.getNumbers().length)}
+        >
+          Add value
+        </div>
+        <div data-testid={'pop'} onClick={() => model.removeLastNumber()}>
+          Pop value
+        </div>
+        <div data-testid={'shift'} onClick={() => model.removeFirstNumber()}>
+          Shift value
+        </div>
+        {model.getNumbers().map((n, i) => (
+          <div data-testid={'number'} key={`number-${i}`}>
+            {n}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const {
+    getByTestId,
+    queryAllByTestId,
+    getByText,
+    queryByTestId,
+    debug
+  } = render(<ComponentUsingModel model={modelInit} />)
+  expect(queryByTestId('number')).not.toBeInTheDocument()
+  for (let i = 0; i < 10; i++) getByTestId('push').click()
+
+  expect(queryAllByTestId('number').length).toEqual(10)
+
+  getByTestId('pop').click()
+  expect(queryAllByTestId('number').length).toEqual(9)
+
+  expect(queryAllByTestId('number')[0]).toHaveTextContent(0)
+  getByTestId('shift').click()
+  expect(queryAllByTestId('number')[0]).toHaveTextContent(1)
+
+  debug()
 })
